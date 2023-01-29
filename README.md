@@ -14,4 +14,4 @@ The yaml file can be updated with additional vulnerable functions as required.
 # Usage
 ![php-demo](https://user-images.githubusercontent.com/7432727/215356287-32e8b089-2c1e-429f-8261-42cc39478ff8.png)
 
-![python-demo](https://user-images.githubusercontent.com/7432727/215356440-0619f5bf-639c-415b-834c-77c351292b2d.png)
+
