@@ -13,7 +13,6 @@ def scan_java_websockets(start_path):
         r"@OnError\b",         # WebSocket error handling
         r"ws://",              # Unsecure WebSocket URL
         r"wss://",             # Secure WebSocket URL
-        # Spring-specific WebSocket indicators
         r"@EnableWebSocket\b",               # Enable WebSocket support
         r"@EnableWebSocketMessageBroker\b",  # Enable WebSocket message broker
         r"\bWebSocketHandler\b",             # WebSocket message handling
@@ -30,7 +29,7 @@ def scan_java_websockets(start_path):
             for i, line in enumerate(lines):
                 for pattern in compiled_patterns:
                     if pattern.search(line):
-                        findings.append((file_path, i + 1, line.strip()))
+                        findings.append((i + 1, line.strip(), file_path))
 
     for root, dirs, files in os.walk(start_path):
         for file in files:
@@ -47,10 +46,9 @@ def main():
 
     findings = scan_java_websockets(args.start_path)
     if findings:
-        print(colored("WebSocket usage found:", 'red'))
-        for file_path, line_number, line_content in findings:
-            message = colored(f"Found WebSockets on line {line_number}: ", 'red') + \
-                      colored(f"Found in code: {file_path}\n{line_content}\n", 'red')
+        for line_number, line_content, file_path in findings:
+            message = colored(f"WebSocket technology detected: {line_content} ", 'red') + \
+                      colored(f"on line {line_number} in {file_path}", 'red')
             print(message)
     else:
         print("No WebSocket usage found.")
