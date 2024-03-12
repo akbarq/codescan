@@ -48,7 +48,8 @@ def main():
     if findings:
         print("WebSocket usage found:")
         for file_path, line_number, line_content in findings:
-            print(f"{file_path} on line {line_number}: {line_content}")
+            print(f"Found WebSockets on line {line_number}:\n{line_content}\n")
+            print("Found in code: {}\n".format(file_path))
     else:
         print("No WebSocket usage found.")
 
