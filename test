@@ -1,52 +1,56 @@
-
 import os
 import re
 import argparse
 
 def scan_java_websockets(start_path):
-    # Define patterns for common WebSocket indicators in Java and Spring Framework
     patterns = [
-        r"@ServerEndpoint\(",  # Annotation for declaring a WebSocket server endpoint in Java EE
-        r"\bSession\b",        # WebSocket Session class
-        r"@OnOpen\b",          # Method annotation for opening a WebSocket connection
-        r"@OnMessage\b",       # Method annotation for receiving a message
-        r"@OnClose\b",         # Method annotation for closing a WebSocket connection
-        r"@OnError\b",         # Method annotation for handling errors
-        r"ws://",              # Unsecure WebSocket connection
-        r"wss://",             # Secure WebSocket connection
-        # Spring-specific patterns
+        r"@ServerEndpoint\(",  # Java EE WebSocket server endpoint
+        r"\bSession\b",        # WebSocket Session
+        r"@OnOpen\b",          # Opening WebSocket connection
+        r"@OnMessage\b",       # Receiving WebSocket message
+        r"@OnClose\b",         # Closing WebSocket connection
+        r"@OnError\b",         # WebSocket error handling
+        r"ws://",              # Unsecure WebSocket URL
+        r"wss://",             # Secure WebSocket URL
+        # Spring-specific WebSocket indicators
         r"@EnableWebSocket\b",               # Enable WebSocket support
-        r"@EnableWebSocketMessageBroker\b",  # Enable WebSocket message handling, backed by a message broker
-        r"\bWebSocketHandler\b",             # Interface for WebSocket message handling
-        r"\bWebSocketConfigurer\b",          # Interface for WebSocket configuration
-        r"\bStompEndpointRegistry\b",        # Class for registering STOMP over WebSocket endpoints
+        r"@EnableWebSocketMessageBroker\b",  # Enable WebSocket message broker
+        r"\bWebSocketHandler\b",             # WebSocket message handling
+        r"\bWebSocketConfigurer\b",          # WebSocket configuration
+        r"\bStompEndpointRegistry\b",        # STOMP endpoint registration
     ]
-
-    # Compile patterns for efficiency
     compiled_patterns = [re.compile(pattern) for pattern in patterns]
 
-    # Function to search a file for any of the patterns
+    findings = []
+
     def search_file(file_path):
         with open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
             lines = file.readlines()
             for i, line in enumerate(lines):
                 for pattern in compiled_patterns:
                     if pattern.search(line):
-                        alert_message = f"Found WebSockets on line {i+1}: {line.strip()}"
-                        print(alert_message)
+                        findings.append((file_path, i + 1, line.strip()))
 
-    # Walk through the directory
     for root, dirs, files in os.walk(start_path):
         for file in files:
-            if file.endswith(".java"):  # Filter for Java files
+            if file.endswith(".java"):  # Targeting Java files
                 file_path = os.path.join(root, file)
                 search_file(file_path)
+
+    return findings
 
 def main():
     parser = argparse.ArgumentParser(description='Scan Java code for WebSocket usage, including Spring implementations.')
     parser.add_argument('start_path', type=str, help='The start path of the Java project to scan.')
     args = parser.parse_args()
-    scan_java_websockets(args.start_path)
+
+    findings = scan_java_websockets(args.start_path)
+    if findings:
+        print("WebSocket usage found:")
+        for file_path, line_number, line_content in findings:
+            print(f"{file_path} on line {line_number}: {line_content}")
+    else:
+        print("No WebSocket usage found.")
 
 if __name__ == '__main__':
     main()
