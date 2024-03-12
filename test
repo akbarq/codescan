@@ -1,6 +1,7 @@
 import os
 import re
 import argparse
+from termcolor import colored
 
 def scan_java_websockets(start_path):
     patterns = [
@@ -46,10 +47,11 @@ def main():
 
     findings = scan_java_websockets(args.start_path)
     if findings:
-        print("WebSocket usage found:")
+        print(colored("WebSocket usage found:", 'red'))
         for file_path, line_number, line_content in findings:
-            print(f"Found WebSockets on line {line_number}:\n{line_content}\n")
-            print("Found in code: {}\n".format(file_path))
+            print(colored(f"Found WebSockets on line {line_number}:", 'red'))
+            print(colored(f"{line_content}\n", 'red'))
+            print(colored("Found in code: {}\n".format(file_path), 'red'))
     else:
         print("No WebSocket usage found.")
 
