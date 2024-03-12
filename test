@@ -47,9 +47,9 @@ def main():
     findings = scan_java_websockets(args.start_path)
     if findings:
         for line_number, line_content, file_path in findings:
-            # Print each finding with the specified format
-            print(colored(f"WebSocket technology detected: {line_content}", 'red'))
-            print(colored(f"Found in code on line {line_number} in {file_path}\n", 'red'))
+            # Part of the message in red, part in default color
+            print(colored("WebSocket technology detected: ", 'red') + f"{line_content}")
+            print(colored(f"Found in code on line {line_number} in ", 'red') + f"{file_path}\n")
     else:
         print("No WebSocket usage found.")
 
