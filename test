@@ -14,7 +14,19 @@ def decompile_apk(apk_path, output_dir):
 
 def scan_java_websockets(start_path):
     patterns = [
-        # Your patterns here
+        r"@ServerEndpoint\(",  # Java EE WebSocket server endpoint
+        r"\bSession\b",        # WebSocket Session
+        r"@OnOpen\b",          # Opening WebSocket connection
+        r"@OnMessage\b",       # Receiving WebSocket message
+        r"@OnClose\b",         # Closing WebSocket connection
+        r"@OnError\b",         # WebSocket error handling
+        r"ws://",              # Unsecure WebSocket URL
+        r"wss://",             # Secure WebSocket URL
+        r"@EnableWebSocket\b",               # Enable WebSocket support
+        r"@EnableWebSocketMessageBroker\b",  # Enable WebSocket message broker
+        r"\bWebSocketHandler\b",             # WebSocket message handling
+        r"\bWebSocketConfigurer\b",          # WebSocket configuration
+        r"\bStompEndpointRegistry\b",        # STOMP endpoint registration
     ]
     compiled_patterns = [re.compile(pattern) for pattern in patterns]
 
@@ -53,8 +65,6 @@ def main():
             print(colored(f"Found in code on line {line_number} in ", 'red') + f"{file_path}\n")
     else:
         print("No WebSocket usage found.")
-
-    # Optional: Clean up the decompiled output directory
 
 if __name__ == '__main__':
     main()
