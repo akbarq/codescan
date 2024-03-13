@@ -1,0 +1,60 @@
+import os
+import re
+import argparse
+import subprocess
+from termcolor import colored
+
+def decompile_apk(apk_path, output_dir):
+    try:
+        subprocess.run(["apktool", "d", apk_path, "-o", output_dir], check=True)
+        print(f"Decompiled APK to {output_dir}")
+    except subprocess.CalledProcessError as e:
+        print("Failed to decompile APK:", e)
+        exit(1)
+
+def scan_java_websockets(start_path):
+    patterns = [
+        # Your patterns here
+    ]
+    compiled_patterns = [re.compile(pattern) for pattern in patterns]
+
+    findings = []
+
+    def search_file(file_path):
+        with open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
+            lines = file.readlines()
+            for i, line in enumerate(lines):
+                for pattern in compiled_patterns:
+                    if pattern.search(line):
+                        findings.append((i + 1, line.strip(), file_path))
+
+    for root, dirs, files in os.walk(start_path):
+        for file in files:
+            if file.endswith(".java") or file.endswith(".xml"):  # Targeting Java and XML files
+                file_path = os.path.join(root, file)
+                search_file(file_path)
+
+    return findings
+
+def main():
+    parser = argparse.ArgumentParser(description='Decompile APK and scan for WebSocket usage.')
+    parser.add_argument('apk_path', type=str, help='The path to the APK file to decompile and scan.')
+    args = parser.parse_args()
+
+    # Temporary directory for decompiled code
+    output_dir = "decompiled_apk"
+    decompile_apk(args.apk_path, output_dir)
+
+    findings = scan_java_websockets(output_dir)
+    if findings:
+        print("WebSocket usage found:")
+        for line_number, line_content, file_path in findings:
+            print(colored("WebSocket technology detected: ", 'red') + f"{line_content}")
+            print(colored(f"Found in code on line {line_number} in ", 'red') + f"{file_path}\n")
+    else:
+        print("No WebSocket usage found.")
+
+    # Optional: Clean up the decompiled output directory
+
+if __name__ == '__main__':
+    main()
