@@ -13,6 +13,7 @@ def decompile_apk(apk_path, output_dir):
         exit(1)
 
 def scan_java_websockets(start_path):
+    # Updated patterns to include Kotlin and common WebSocket usage in Android
     patterns = [
         r"@ServerEndpoint\(",  # Java EE WebSocket server endpoint
         r"\bSession\b",        # WebSocket Session
@@ -27,6 +28,13 @@ def scan_java_websockets(start_path):
         r"\bWebSocketHandler\b",             # WebSocket message handling
         r"\bWebSocketConfigurer\b",          # WebSocket configuration
         r"\bStompEndpointRegistry\b",        # STOMP endpoint registration
+        # Patterns for Kotlin and common libraries
+        r"OkHttpClient\(\)",                 # OkHttpClient, used for WebSockets among other things
+        r"WebSocketListener",                # OkHttp WebSocketListener
+        r"newWebSocket\(",                   # OkHttp newWebSocket call
+        r"Scarlet.Builder\(\)",              # Scarlet WebSocket library for Kotlin
+        r"@Receive",                         # Scarlet annotations for receiving messages
+        r"@Send",                            # Scarlet annotations for sending messages
     ]
     compiled_patterns = [re.compile(pattern) for pattern in patterns]
 
@@ -42,7 +50,8 @@ def scan_java_websockets(start_path):
 
     for root, dirs, files in os.walk(start_path):
         for file in files:
-            if file.endswith(".java") or file.endswith(".xml"):  # Targeting Java and XML files
+            # Targeting both Java and Kotlin files (including XML for configurations)
+            if file.endswith(".java") or file.endswith(".kt") or file.endswith(".xml"):  
                 file_path = os.path.join(root, file)
                 search_file(file_path)
 
