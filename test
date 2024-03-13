@@ -1,67 +1,62 @@
 import os
-import subprocess
+import re
 import argparse
 from termcolor import colored
 
-def decompile_apk_with_jadx(jadx_path, apk_path, output_dir):
-    try:
-        subprocess.run([jadx_path, "-d", output_dir, apk_path], check=True)
-        print(f"APK decompiled to {output_dir} using jadx")
-    except subprocess.CalledProcessError as e:
-        print("Failed to decompile APK with jadx:", e)
-        exit(1)
-
 def scan_java_websockets(start_path):
     patterns = [
-        # Add WebSocket and Kotlin-specific patterns here
-        r"@ServerEndpoint\(",  # Java EE WebSocket server endpoint
-        r"\bSession\b",        # WebSocket Session
-        r"@OnOpen\b",          # Opening WebSocket connection
-        r"@OnMessage\b",       # Receiving WebSocket message
-        r"@OnClose\b",         # Closing WebSocket connection
-        r"@OnError\b",         # WebSocket error handling
-        r"ws://",              # Unsecure WebSocket URL
-        r"wss://",             # Secure WebSocket URL
+        # Java and Kotlin WebSocket patterns
+        r"@ServerEndpoint\(",                 # Java EE WebSocket server endpoint
+        r"\bSession\b",                      # WebSocket Session
+        r"@OnOpen\b",                        # Opening WebSocket connection
+        r"@OnMessage\b",                     # Receiving WebSocket message
+        r"@OnClose\b",                       # Closing WebSocket connection
+        r"@OnError\b",                       # WebSocket error handling
+        r"ws://",                            # Unsecure WebSocket URL
+        r"wss://",                           # Secure WebSocket URL
         r"@EnableWebSocket\b",               # Enable WebSocket support
         r"@EnableWebSocketMessageBroker\b",  # Enable WebSocket message broker
         r"\bWebSocketHandler\b",             # WebSocket message handling
         r"\bWebSocketConfigurer\b",          # WebSocket configuration
         r"\bStompEndpointRegistry\b",        # STOMP endpoint registration
-        # Kotlin and common Android libraries for WebSockets
-        r"WebSocket\(",                       # Generic WebSocket pattern
-        r"OkHttpClient\(\)",                  # OkHttpClient, often used with WebSockets
-        r"newWebSocket\(",                    # OkHttp newWebSocket call
+        # Kotlin-specific and common Android libraries patterns
+        r"OkHttpClient\(\)\.newWebSocket",   # OkHttp WebSocket initialization in Kotlin
+        r"WebSocketListener",                # OkHttp WebSocketListener
+        r"create\(.*::class.java\)",         # Scarlet WebSocket service creation
+        r"@Send",                            # Scarlet annotation for sending messages
+        r"@Receive",                         # Scarlet annotation for receiving messages
+        # More generic patterns for catching WebSocket implementations
+        r"WebSocket\(",                      # Generic WebSocket pattern that might catch various implementations
         # Add more patterns as needed
     ]
-    compiled_patterns = [re.compile(pattern, re.MULTILINE) for pattern in patterns]
+    compiled_patterns = [re.compile(pattern) for pattern in patterns]
 
     findings = []
 
+    def search_file(file_path):
+        with open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
+            content = file.read()
+            for pattern in compiled_patterns:
+                if pattern.search(content):
+                    findings.append(file_path)
+                    break  # Break after the first match to avoid duplicate entries for the same file
+
     for root, dirs, files in os.walk(start_path):
         for file_name in files:
-            if file_name.endswith(".java") or file_name.endswith(".kt"):
+            if file_name.endswith(".java") or file_name.endswith(".kt"):  # Targeting both Java and Kotlin files
                 file_path = os.path.join(root, file_name)
-                with open(file_path, 'r', encoding='utf-8', errors='ignore') as file:
-                    content = file.read()
-                    for pattern in compiled_patterns:
-                        if pattern.search(content):
-                            findings.append(file_path)
-                            break  # Stop searching this file after the first match for efficiency
+                search_file(file_path)
 
     return findings
 
 def main():
-    parser = argparse.ArgumentParser(description='Decompile APK using jadx and scan for WebSocket usage.')
-    parser.add_argument('jadx_path', type=str, help='The path to the jadx binary.')
-    parser.add_argument('apk_path', type=str, help='The path to the APK file to decompile and scan.')
+    parser = argparse.ArgumentParser(description='Scan decompiled code for WebSocket usage, including Kotlin and common Android implementations.')
+    parser.add_argument('start_path', type=str, help='The start path of the decompiled project to scan.')
     args = parser.parse_args()
 
-    output_dir = "decompiled_src"
-    decompile_apk_with_jadx(args.jadx_path, args.apk_path, output_dir)
-
-    findings = scan_java_websockets(output_dir)
+    findings = scan_java_websockets(args.start_path)
     if findings:
-        print("WebSocket usage found in the following files:")
+        print("WebSocket technology detected in the following files:")
         for file_path in findings:
             print(colored(file_path, 'red'))
     else:
