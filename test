@@ -5,26 +5,28 @@ import argparse
 
 def decompile_apk(jadx_path, apk_path, output_dir="decompiled"):
     """
-    Decompiles the APK to Java/Kotlin source code using jadx.
+    Decompile APK using JADX.
     """
+    print("Starting decompilation...")
     try:
         subprocess.run([jadx_path, "-d", output_dir, apk_path], check=True)
-        print(f"Decompilation complete. Decompiled code at: {output_dir}")
+        print(f"Decompilation completed: {output_dir}")
     except subprocess.CalledProcessError as e:
-        print(f"Error during decompilation: {e}")
+        print(f"Decompilation failed: {e}")
         exit(1)
     return output_dir
 
 def scan_for_websockets(decompiled_path):
     """
-    Scans the decompiled source code for WebSocket usage.
+    Scan the decompiled source code for any WebSocket usage.
     """
+    # Search patterns for WebSockets.
     websocket_patterns = [
-        r"import\s+.*WebSocket;",  # General WebSocket import
-        r"OkHttpClient\(\)\.newWebSocket",  # OkHttp WebSocket creation
-        r"new\s+WebSocketListener",  # WebSocketListener creation
-        r"ws://",  # WebSocket plain text protocol
-        r"wss://"  # WebSocket Secure protocol
+        r"import\s+.*WebSocket;",  # Look for WebSocket imports.
+        r"OkHttpClient\(\)\.newWebSocket",  # OkHttp WebSocket creation.
+        r"new\s+WebSocketListener",  # WebSocketListener instances.
+        r"ws://",  # Plain WebSocket protocol.
+        r"wss://"  # Secure WebSocket protocol.
     ]
     findings = []
 
@@ -37,16 +39,16 @@ def scan_for_websockets(decompiled_path):
                     for pattern in websocket_patterns:
                         if re.search(pattern, content, re.IGNORECASE):
                             findings.append(file_path)
-                            break  # Avoid duplicating findings for the same file
+                            break  # Found WebSocket usage, move to next file.
 
     return findings
 
 def report_findings(findings):
     """
-    Reports the findings in a simple format.
+    Print out the files where WebSocket usage was found.
     """
     if findings:
-        print("WebSocket usage found in the following files:")
+        print("\033[92mWebSocket usage found in the following files:\033[0m")
         for file in findings:
             print(f"- {file}")
     else:
@@ -54,26 +56,27 @@ def report_findings(findings):
 
 def parse_arguments():
     """
-    Parses command-line arguments.
+    Parse command-line arguments to allow flexibility in usage.
     """
-    parser = argparse.ArgumentParser(description='Decompile APK and scan for WebSocket usage. Can also scan already decompiled code.')
-    parser.add_argument('--jadx_path', type=str, help='Path to the jadx binary', default="")
-    parser.add_argument('--apk_path', type=str, help='Path to the APK file to be decompiled', default="")
-    parser.add_argument('--decompiled_path', type=str, help='Path to the already decompiled code directory', default="")
+    parser = argparse.ArgumentParser(description='Find WebSockets in APK files.')
+    parser.add_argument('--jadx_path', type=str, help='Path to JADX binary', default="")
+    parser.add_argument('--apk_path', type=str, help='Path to the APK file', default="")
+    parser.add_argument('--decompiled_path', type=str, help='Path to already decompiled code', default="")
     return parser.parse_args()
 
 def main():
     args = parse_arguments()
 
     if args.decompiled_path:
+        # If a path to decompiled code is provided, use it directly.
+        print("Using existing decompiled code.")
         decompiled_path = args.decompiled_path
-        print(f"Skipping decompilation. Using provided decompiled code at: {decompiled_path}")
     else:
+        # Ensure necessary details are provided for decompilation.
         if not args.jadx_path or not args.apk_path:
-            print("Error: Please provide jadx_path and apk_path for decompilation or specify an existing decompiled_path.")
+            print("Missing jadx_path or apk_path. Exiting.")
             exit(1)
-        output_dir = "decompiled"
-        decompiled_path = decompile_apk(args.jadx_path, args.apk_path, output_dir)
+        decompiled_path = decompile_apk(args.jadx_path, args.apk_path)
 
     findings = scan_for_websockets(decompiled_path)
     report_findings(findings)
