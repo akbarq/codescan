@@ -56,15 +56,25 @@ def parse_arguments():
     """
     Parses command-line arguments.
     """
-    parser = argparse.ArgumentParser(description='Decompile APK and scan for WebSocket usage.')
-    parser.add_argument('jadx_path', type=str, help='Path to the jadx binary')
-    parser.add_argument('apk_path', type=str, help='Path to the APK file to be decompiled')
+    parser = argparse.ArgumentParser(description='Decompile APK and scan for WebSocket usage. Can also scan already decompiled code.')
+    parser.add_argument('--jadx_path', type=str, help='Path to the jadx binary', default="")
+    parser.add_argument('--apk_path', type=str, help='Path to the APK file to be decompiled', default="")
+    parser.add_argument('--decompiled_path', type=str, help='Path to the already decompiled code directory', default="")
     return parser.parse_args()
 
 def main():
     args = parse_arguments()
-    output_dir = "decompiled"
-    decompiled_path = decompile_apk(args.jadx_path, args.apk_path, output_dir)
+
+    if args.decompiled_path:
+        decompiled_path = args.decompiled_path
+        print(f"Skipping decompilation. Using provided decompiled code at: {decompiled_path}")
+    else:
+        if not args.jadx_path or not args.apk_path:
+            print("Error: Please provide jadx_path and apk_path for decompilation or specify an existing decompiled_path.")
+            exit(1)
+        output_dir = "decompiled"
+        decompiled_path = decompile_apk(args.jadx_path, args.apk_path, output_dir)
+
     findings = scan_for_websockets(decompiled_path)
     report_findings(findings)
 
